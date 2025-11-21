@@ -74,14 +74,11 @@ def _strassen_recursive(A, B, threshold):
     return C
 
 
-def cache_optimized_multiply(A, B, block_size=64):
+def cache_optimized_multiply(A, B, block_size=256):
     """
-    FIXED: True cache-optimized matrix multiplication using blocking/tiling.
-    Manual implementation with loops - NO np.dot() inside blocks.
-    Improves cache locality by processing the matrix in blocks.
-    
-    CHANGE: Replaced np.dot() calls with manual triple loop inside blocks.
-    WHY: To demonstrate actual cache optimization effects.
+    Cache-optimized matrix multiplication using blocking/tiling.
+    Uses NumPy's highly optimized dot() inside each block.
+    This is the correct high-performance approach.
     """
     A = np.array(A, dtype=float)
     B = np.array(B, dtype=float)
@@ -94,7 +91,6 @@ def cache_optimized_multiply(A, B, block_size=64):
     
     C = np.zeros((n, p), dtype=float)
     
-    # Block/tile iteration
     for i in range(0, n, block_size):
         i_end = min(i + block_size, n)
         
@@ -104,13 +100,11 @@ def cache_optimized_multiply(A, B, block_size=64):
             for k in range(0, m, block_size):
                 k_end = min(k + block_size, m)
                 
-                # Manual block multiplication (cache-friendly)
-                for ii in range(i, i_end):
-                    for jj in range(j, j_end):
-                        temp_sum = 0.0
-                        for kk in range(k, k_end):
-                            temp_sum += A[ii, kk] * B[kk, jj]
-                        C[ii, jj] += temp_sum
+                # This is the efficient part: NumPy handles each block in optimized C code.
+                C[i:i_end, j:j_end] += np.dot(
+                    A[i:i_end, k:k_end],
+                    B[k:k_end, j:j_end]
+                )
     
     return C
 
@@ -118,10 +112,7 @@ def cache_optimized_multiply(A, B, block_size=64):
 def transpose_multiply(A, B):
     """
     Matrix multiplication with B transposed for better cache locality.
-    C = A × B = A × (B^T)^T
-    
-    NEW METHOD: Uses transposed access pattern.
-    WHY: Better cache performance - sequential memory access.
+    Not used as an optimized method in the final report.
     """
     A = np.array(A, dtype=float)
     B = np.array(B, dtype=float)
@@ -132,16 +123,14 @@ def transpose_multiply(A, B):
     if m != m2:
         raise ValueError(f"Incompatible dimensions")
     
-    # Transpose B for cache-friendly access
-    B_T = B.T.copy()  # .copy() ensures contiguous memory
+    B_T = B.T.copy()
     C = np.zeros((n, p), dtype=float)
     
-    # Now both inner loops access memory sequentially
     for i in range(n):
         for j in range(p):
             temp_sum = 0.0
             for k in range(m):
-                temp_sum += A[i, k] * B_T[j, k]  # Both sequential!
+                temp_sum += A[i, k] * B_T[j, k]
             C[i, j] = temp_sum
     
     return C
